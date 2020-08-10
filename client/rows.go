@@ -2,8 +2,8 @@ package client
 
 import (
 	"encoding/binary"
+	. "github.com/lichunzhu/go-mysql/mysql"
 	"github.com/pingcap/errors"
-	. "github.com/siddontang/go-mysql/mysql"
 )
 
 type Rows struct {
