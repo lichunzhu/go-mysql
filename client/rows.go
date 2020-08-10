@@ -62,7 +62,6 @@ func (c *Rows) Next() bool {
 	}
 
 	result.RowDatas[0] = data
-
 	result.Values[0], err = result.RowDatas[0].ParsePureText(result.Fields, result.Values[0])
 	if err != nil {
 		c.err = errors.Trace(err)

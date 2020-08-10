@@ -299,7 +299,8 @@ func (c *Conn) readRowsResultset(data []byte, binary bool) (*Rows, error) {
 		Result: result,
 	}
 
-	result.RowDatas = make([]RowData, 0, 1)
+	result.RowDatas = make([]RowData, 1)
+	result.Values = make([][]FieldValue, 1)
 	return rows, nil
 }
 
