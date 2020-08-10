@@ -37,7 +37,7 @@ func (c *Rows) Next() bool {
 	result := c.Result
 
 	result.RawPkg = result.RawPkg[:0]
-	result.RawPkg, err = c.ReadPacketReuseMem(result.RawPkg)
+	result.RawPkg, err = c.ReadPacketReuseMemNoCopy(result.RawPkg)
 	if err != nil {
 		c.err = err
 		return false

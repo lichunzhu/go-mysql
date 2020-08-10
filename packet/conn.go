@@ -103,6 +103,19 @@ func (c *Conn) ReadPacketReuseMem(dst []byte) ([]byte, error) {
 	}
 }
 
+func (c *Conn) ReadPacketReuseMemNoCopy(dst []byte) ([]byte, error) {
+	// Here we use `sync.Pool` to avoid allocate/destroy buffers frequently.
+	buf := utils.BytesBufferGet()
+	defer utils.BytesBufferPut(buf)
+
+	if err := c.ReadPacketTo(buf); err != nil {
+		return nil, errors.Trace(err)
+	} else {
+		result := buf.Bytes()
+		return result, nil
+	}
+}
+
 func (c *Conn) copyN(dst io.Writer, src io.Reader, n int64) (written int64, err error) {
 	for n > 0 {
 		bcap := cap(c.copyNBuf)
