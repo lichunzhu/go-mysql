@@ -82,13 +82,12 @@ func (p RowData) ParsePureText(f []*Field, dst []FieldValue) ([]FieldValue, erro
 	data := dst[:len(f)]
 
 	var err error
-	var v []byte
 	var isNull bool
 	var pos int = 0
 	var n int = 0
 
 	for i := range f {
-		v, isNull, n, err = LengthEncodedString(p[pos:])
+		data[i].str, isNull, n, err = LengthEncodedString(p[pos:])
 		if err != nil {
 			return nil, errors.Trace(err)
 		}
@@ -96,27 +95,7 @@ func (p RowData) ParsePureText(f []*Field, dst []FieldValue) ([]FieldValue, erro
 		pos += n
 
 		if isNull {
-			data[i].Type = FieldValueTypeNull
-		} else {
-			isUnsigned := f[i].Flag&UNSIGNED_FLAG != 0
-
-			switch f[i].Type {
-			case MYSQL_TYPE_TINY, MYSQL_TYPE_SHORT, MYSQL_TYPE_INT24,
-				MYSQL_TYPE_LONGLONG, MYSQL_TYPE_LONG, MYSQL_TYPE_YEAR:
-				if isUnsigned {
-					data[i].Type = FieldValueTypeUnsigned
-					data[i].str = v
-				} else {
-					data[i].Type = FieldValueTypeSigned
-					data[i].str = v
-				}
-			case MYSQL_TYPE_FLOAT, MYSQL_TYPE_DOUBLE:
-				data[i].Type = FieldValueTypeFloat
-				data[i].str = v
-			default:
-				data[i].Type = FieldValueTypeString
-				data[i].str = v
-			}
+			data[i].str = nil
 		}
 	}
 
