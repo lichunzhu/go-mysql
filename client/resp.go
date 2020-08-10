@@ -230,6 +230,30 @@ func (c *Conn) readResult(binary bool) (*Result, error) {
 	return c.readResultset(firstPkgBuf, binary)
 }
 
+func (c *Conn) readSqlRows(binary bool) (*Rows, error) {
+	firstPkgBuf, err := c.ReadPacketReuseMem(utils.ByteSliceGet(16)[:0])
+	defer utils.ByteSlicePut(firstPkgBuf)
+
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	if firstPkgBuf[0] == OK_HEADER {
+		result, err := c.handleOKPacket(firstPkgBuf)
+		r := &Rows{
+			Conn: c,
+			Result: result,
+		}
+		return r, err
+	} else if firstPkgBuf[0] == ERR_HEADER {
+		return nil, c.handleErrorPacket(append([]byte{}, firstPkgBuf...))
+	} else if firstPkgBuf[0] == LocalInFile_HEADER {
+		return nil, ErrMalformPacket
+	}
+
+	return c.readRowsResultset(firstPkgBuf, binary)
+}
+
 func (c *Conn) readResultset(data []byte, binary bool) (*Result, error) {
 	// column count
 	count, _, n := LengthEncodedInt(data)
@@ -251,6 +275,32 @@ func (c *Conn) readResultset(data []byte, binary bool) (*Result, error) {
 	}
 
 	return result, nil
+}
+
+func (c *Conn) readRowsResultset(data []byte, binary bool) (*Rows, error) {
+	// column count
+	count, _, n := LengthEncodedInt(data)
+
+	if n-len(data) != 0 {
+		return nil, ErrMalformPacket
+	}
+
+	result := &Result{
+		Resultset: NewResultset(int(count)),
+	}
+
+	if err := c.readResultColumns(result); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	rows := &Rows{
+		binary: binary,
+		Conn:   c,
+		Result: result,
+	}
+
+	result.RowDatas = make([]RowData, 0, 1)
+	return rows, nil
 }
 
 func (c *Conn) readResultColumns(result *Result) (err error) {
