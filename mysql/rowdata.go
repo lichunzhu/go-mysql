@@ -105,17 +105,17 @@ func (p RowData) ParsePureText(f []*Field, dst []FieldValue) ([]FieldValue, erro
 				MYSQL_TYPE_LONGLONG, MYSQL_TYPE_LONG, MYSQL_TYPE_YEAR:
 				if isUnsigned {
 					data[i].Type = FieldValueTypeUnsigned
-					data[i].str = append(data[i].str[:0], v...)
+					data[i].str = v
 				} else {
 					data[i].Type = FieldValueTypeSigned
-					data[i].str = append(data[i].str[:0], v...)
+					data[i].str = v
 				}
 			case MYSQL_TYPE_FLOAT, MYSQL_TYPE_DOUBLE:
 				data[i].Type = FieldValueTypeFloat
-				data[i].str = append(data[i].str[:0], v...)
+				data[i].str = v
 			default:
 				data[i].Type = FieldValueTypeString
-				data[i].str = append(data[i].str[:0], v...)
+				data[i].str = v
 			}
 		}
 	}
