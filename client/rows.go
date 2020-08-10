@@ -36,13 +36,13 @@ func (c *Rows) Next() bool {
 	var err error
 	result := c.Result
 
-	rawPkgLen := len(result.RawPkg)
+	result.RawPkg = result.RawPkg[:0]
 	result.RawPkg, err = c.ReadPacketReuseMem(result.RawPkg)
 	if err != nil {
 		c.err = err
 		return false
 	}
-	data = result.RawPkg[rawPkgLen:]
+	data = result.RawPkg
 
 	// EOF Packet
 	if c.isEOFPacket(data) {
