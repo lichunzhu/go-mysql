@@ -38,7 +38,7 @@ type Rows struct {
 	err                error
 	parseErr  	       chan error
 	RawBytesBufferChan chan *bytes.Buffer
-	OutputValueChan    chan []FieldValue
+	OutputValueChan    chan *OutputResult
 }
 
 func (c *Conn) Query(command string, args ...interface{}) (*Rows, error) {
@@ -103,7 +103,6 @@ func (c *Rows) Start() error {
 func (c *Rows) KeepParsing() {
 	var (
 		rowData RowData
-		value []FieldValue
 		err error
 	)
 	for data := range c.RawBytesBufferChan {
@@ -116,11 +115,11 @@ func (c *Rows) KeepParsing() {
 		if len(ores.FieldResultArr) < len(c.Result.Fields) {
 			ores.FieldResultArr = make([]FieldValue, len(c.Result.Fields))
 		}
-		value, err = rowData.ParsePureText(c.Result.Fields, value)
+		ores.FieldResultArr, err = rowData.ParsePureText(c.Result.Fields, ores.FieldResultArr)
 		if err != nil {
 			c.parseErr <- errors.Trace(err)
 		}
-		c.OutputValueChan <- value
+		c.OutputValueChan <- ores
 	}
 }
 
