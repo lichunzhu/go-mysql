@@ -95,7 +95,17 @@ func (p RowData) ParsePureText(f []*Field, dst []FieldValue) ([]FieldValue, erro
 		pos += n
 
 		if isNull {
+			data[i].Type = FieldValueTypeNull
 			data[i].str = nil
+		} else {
+			switch f[i].Type {
+			case MYSQL_TYPE_TINY, MYSQL_TYPE_SHORT, MYSQL_TYPE_INT24,
+				MYSQL_TYPE_LONGLONG, MYSQL_TYPE_LONG, MYSQL_TYPE_YEAR,
+				MYSQL_TYPE_FLOAT, MYSQL_TYPE_DOUBLE:
+				data[i].Type = FieldValueTypeSigned
+			default:
+				data[i].Type = FieldValueTypeString
+			}
 		}
 	}
 
