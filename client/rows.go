@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	. "github.com/lichunzhu/go-mysql/mysql"
 	"github.com/lichunzhu/go-mysql/utils"
 	"github.com/pingcap/errors"
@@ -117,6 +118,7 @@ func (c *Rows) KeepParsing() {
 		rowData RowData
 		err error
 	)
+	cnt := 0
 	for data := range c.RawBytesBufferChan {
 		if err != nil {
 			continue
@@ -125,6 +127,8 @@ func (c *Rows) KeepParsing() {
 		ores := OutputResultGet()
 		ores.RawBytesBuf = data
 		if len(ores.FieldResultArr) < len(c.Result.Fields) {
+			cnt+=1
+			fmt.Printf("cnt: %d, len(ores): %d, len(fields): %d\n", cnt, len(ores.FieldResultArr), len(c.Result.Fields))
 			ores.FieldResultArr = make([]FieldValue, len(c.Result.Fields))
 		}
 		ores.FieldResultArr, err = rowData.ParsePureText(c.Result.Fields, ores.FieldResultArr)
@@ -133,6 +137,7 @@ func (c *Rows) KeepParsing() {
 		}
 		c.OutputValueChan <- ores
 	}
+	fmt.Printf("cnt: %d\n", cnt)
 }
 
 func (c *Rows) FinishReading(result *OutputResult) {
