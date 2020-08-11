@@ -9,20 +9,25 @@ import (
 	"sync"
 )
 
+type OutputResult struct {
+	RawBytesBuf    *bytes.Buffer
+	FieldResultArr []FieldValue
+}
+
 var (
-	fieldValuePool = sync.Pool{
+	outputResultPool = sync.Pool{
 		New: func() interface{} {
-			return make([]FieldValue, 0)
+			return &OutputResult{}
 		},
 	}
 )
 
-func FieldValueGet() (fieldValue []FieldValue) {
-	return fieldValuePool.New().([]FieldValue)
+func OutputResultGet() *OutputResult {
+	return outputResultPool.New().(*OutputResult)
 }
 
-func FieldValuePut(fieldValue []FieldValue) {
-	fieldValuePool.Put(fieldValue)
+func OutputResultPut(res *OutputResult) {
+	outputResultPool.Put(res)
 }
 
 
@@ -54,7 +59,7 @@ func (c *Conn) Query(command string, args ...interface{}) (*Rows, error) {
 	}
 }
 
-func (c *Rows) Start() bool {
+func (c *Rows) Start() error {
 	var data []byte
 	result := c.Result
 	defer close(c.RawBytesBufferChan)
@@ -63,7 +68,7 @@ func (c *Rows) Start() bool {
 		bf, err := c.ReadPacketReuseMemNoCopy()
 		if err != nil {
 			c.err = err
-			return false
+			return err
 		}
 		data = bf.Bytes()
 
@@ -76,19 +81,19 @@ func (c *Rows) Start() bool {
 				c.status = result.Status
 			}
 
-			return true
+			return nil
 		}
 
 		if data[0] == ERR_HEADER {
 			c.err = c.handleErrorPacket(data)
-			return false
+			return c.err
 		}
 
 		c.RawBytesBufferChan <- bf
 
 		select {
 		case c.err = <-c.parseErr:
-			return false
+			return c.err
 		default:
 		}
 	}
@@ -102,17 +107,24 @@ func (c *Rows) KeepParsing() {
 		err error
 	)
 	for data := range c.RawBytesBufferChan {
+		if err != nil {
+			continue
+		}
 		rowData = data.Bytes()
-		value = FieldValueGet()
+		ores := OutputResultGet()
+		ores.RawBytesBuf = data
+		if len(ores.FieldResultArr) < len(c.Result.Fields) {
+			ores.FieldResultArr = make([]FieldValue, len(c.Result.Fields))
+		}
 		value, err = rowData.ParsePureText(c.Result.Fields, value)
 		if err != nil {
 			c.parseErr <- errors.Trace(err)
 		}
-		utils.BytesBufferPut(data)
 		c.OutputValueChan <- value
 	}
 }
 
-func (c *Rows) FinishReading(fieldValue []FieldValue) {
-	FieldValuePut(fieldValue)
+func (c *Rows) FinishReading(result *OutputResult) {
+	utils.BytesBufferPut(result.RawBytesBuf)
+	OutputResultPut(result)
 }

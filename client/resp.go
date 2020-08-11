@@ -299,10 +299,9 @@ func (c *Conn) readRowsResultset(data []byte, binary bool) (*Rows, error) {
 		Result:             result,
 		RawBytesBufferChan: make(chan *bytes.Buffer, 64),
 		OutputValueChan:    make(chan []FieldValue, 64),
+		parseErr:           make(chan error, 8),
 	}
 
-	result.RowDatas = make([]RowData, 1)
-	result.Values = make([][]FieldValue, 1)
 	return rows, nil
 }
 
