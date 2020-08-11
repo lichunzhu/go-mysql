@@ -20,14 +20,25 @@ var (
 			return &OutputResult{}
 		},
 	}
+	outputResultChan = make(chan *OutputResult, 10)
 )
 
-func OutputResultGet() *OutputResult {
-	return outputResultPool.New().(*OutputResult)
+func OutputResultGet() (data *OutputResult) {
+	select {
+	case data = <-outputResultChan:
+	default:
+		data = outputResultPool.New().(*OutputResult)
+	}
+
+	return data
 }
 
-func OutputResultPut(res *OutputResult) {
-	outputResultPool.Put(res)
+func OutputResultPut(data *OutputResult) {
+	select {
+	case outputResultChan <- data:
+	default:
+		outputResultPool.Put(data)
+	}
 }
 
 
