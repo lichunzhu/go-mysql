@@ -294,9 +294,11 @@ func (c *Conn) readRowsResultset(data []byte, binary bool) (*Rows, error) {
 	}
 
 	rows := &Rows{
-		binary: binary,
-		Conn:   c,
-		Result: result,
+		binary:             binary,
+		Conn:               c,
+		Result:             result,
+		RawBytesBufferChan: make(chan *bytes.Buffer, 64),
+		OutputValueChan:    make(chan []FieldValue, 64),
 	}
 
 	result.RowDatas = make([]RowData, 1)
