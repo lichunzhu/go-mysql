@@ -7,7 +7,6 @@ import (
 	. "github.com/lichunzhu/go-mysql/mysql"
 	"github.com/lichunzhu/go-mysql/utils"
 	"github.com/pingcap/errors"
-	"sync"
 )
 
 type OutputResult struct {
@@ -16,29 +15,19 @@ type OutputResult struct {
 }
 
 var (
-	outputResultPool = sync.Pool{
-		New: func() interface{} {
-			return &OutputResult{}
-		},
-	}
-	outputResultChan = make(chan *OutputResult, 10)
+	outputResultChan = make(chan *OutputResult, 80)
 )
 
 func OutputResultGet() (data *OutputResult) {
 	select {
 	case data = <-outputResultChan:
-	default:
-		data = outputResultPool.New().(*OutputResult)
 	}
-
 	return data
 }
 
 func OutputResultPut(data *OutputResult) {
 	select {
 	case outputResultChan <- data:
-	default:
-		outputResultPool.Put(data)
 	}
 }
 
@@ -119,6 +108,11 @@ func (c *Rows) KeepParsing() {
 		err error
 	)
 	cnt := 0
+	for len(outputResultChan) < cap(outputResultChan) {
+		outputResultChan <- &OutputResult{
+			FieldResultArr: make([]FieldValue, len(c.Result.Fields)),
+		}
+	}
 	for data := range c.RawBytesBufferChan {
 		if err != nil {
 			continue
