@@ -101,6 +101,7 @@ func (c *Rows) Start() error {
 }
 
 func (c *Rows) KeepParsing() {
+	defer close(c.OutputValueChan)
 	var (
 		rowData RowData
 		err error
